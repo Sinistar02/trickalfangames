@@ -1,0 +1,537 @@
+/* ==========================================================================
+   트릭컬그라운즈 — 스타일
+   화면 상태는 <html data-view="splash | home | list"> 로 제어한다.
+   ========================================================================== */
+
+/* ---------- 디자인 토큰 ---------- */
+:root {
+  /* 라이트 모드 (기본) — 색상은 스케치에서 추출 */
+  --bg: #f7feff;
+  --panel: #ffffff;
+  --accent: #65f0ff;          /* 패널·팝업 테두리 */
+  --text: #000000;
+  --muted: #7f7f7f;
+  --muted-soft: #969696;
+  --thumb-bg: #d1d1d1;
+  --thumb-line: #000000;
+  --btn-bg: #7294f2;
+  --btn-bg-hover: #6385e6;
+  --btn-line: #2e4cab;
+  --btn-text: #ffffff;
+  --btn-disabled-bg: #c9ced6;
+  --btn-disabled-line: #9aa1ad;
+  --close: #ff0000;
+  --overlay: rgba(0, 0, 0, 0.2);
+  --control-bg: rgba(255, 255, 255, 0.85);
+  --control-line: #cfe8ec;
+  --switch-track: #d6e4e7;
+  --switch-knob: #ffffff;
+  --switch-icon: #8a9a9e;
+  --focus: #1b8fa0;
+
+  /* 레이아웃 */
+  /* UI 배율: 글자·카드·간격·팝업이 모두 rem 이라 이 값 하나로 함께 줄고 늘어난다.
+     (로고와 오른쪽 위 컨트롤은 px/vh 단위라 영향을 받지 않는다.) */
+  --ui-scale: 0.5;
+  --ui-min-root: 8px;                             /* 좁은 화면에서 너무 작아지는 것을 막는 하한 */
+
+  --edge: 38px;                                   /* 화면 위쪽·아래쪽 여백 (로고 영역) */
+  --gutter: clamp(12px, 3.3vw, 56px);             /* 패널 좌우 여백 */
+  --panel-radius: clamp(14px, 2.75vw, 40px);
+  --panel-border: 2px;
+  --logo-splash: min(60vw, 36vh);                 /* 첫 화면의 로고 한 변 */
+  --logo-home: clamp(84px, 14.4vh, 150px);        /* 홈 화면의 로고 한 변 */
+  --dur: 0.8s;                                    /* 화면 전환 애니메이션 길이 */
+  --ease: cubic-bezier(0.65, 0, 0.35, 1);         /* 정·역재생이 대칭이 되는 이징 */
+
+  --font: "Noto Sans KR", "Noto Sans JP", "Pretendard", "Malgun Gothic",
+          "Apple SD Gothic Neo", "Hiragino Sans", "Yu Gothic", "Meiryo",
+          system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: light;
+}
+
+:root[lang="ja"] {
+  --font: "Noto Sans JP", "Noto Sans KR", "Hiragino Sans", "Yu Gothic", "Meiryo",
+          "Malgun Gothic", "Apple SD Gothic Neo", system-ui, -apple-system,
+          "Segoe UI", sans-serif;
+}
+
+:root[data-theme="dark"] {
+  --bg: #0c1214;
+  --panel: #141c1f;
+  --accent: #36cfe2;
+  --text: #eef5f6;
+  --muted: #98a7ab;
+  --muted-soft: #7f8e92;
+  --thumb-bg: #2b3538;
+  --thumb-line: #b9c5c8;
+  --btn-bg: #5a7fe6;
+  --btn-bg-hover: #6c8df0;
+  --btn-line: #8aa5f5;
+  --btn-text: #ffffff;
+  --btn-disabled-bg: #2f3a3e;
+  --btn-disabled-line: #4a5a5f;
+  --close: #ee2b2b;
+  --overlay: rgba(0, 0, 0, 0.6);
+  --control-bg: rgba(20, 28, 31, 0.85);
+  --control-line: #2b3b40;
+  --switch-track: #2f5560;
+  --switch-knob: #f2fbfc;
+  --switch-icon: #cfe9ee;
+  --focus: #5fe0f0;
+  color-scheme: dark;
+}
+
+/* ---------- 기본 ---------- */
+*, *::before, *::after { box-sizing: border-box; }
+
+html {
+  /* 기준 글꼴 크기: (화면 폭에 따라 13~19px 로 변하는 값) × UI 배율, 단 하한 이상 */
+  font-size: max(var(--ui-min-root), calc(clamp(13px, calc(0.45vw + 10.2px), 19px) * var(--ui-scale)));
+  scrollbar-gutter: stable;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  line-height: 1.5;
+  transition: background-color 0.25s, color 0.25s;
+}
+
+/* 첫 화면에서는 스크롤을 잠근다 */
+html[data-view="splash"] { overflow: hidden; }
+html.modal-open { overflow: hidden; }
+
+/* 로드 직후·키보드 초기화 중에는 전환을 끈다 */
+html.no-anim *, html.no-anim *::before, html.no-anim *::after { transition: none !important; }
+
+a { color: inherit; }
+button, select { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+
+.sr-only {
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+/* ---------- 오른쪽 위 컨트롤 ---------- */
+.controls {
+  position: fixed;
+  top: 6px;
+  right: max(14px, calc(var(--gutter) * 0.5));
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 3px 4px 3px 6px;
+  background: var(--control-bg);
+  border: 1px solid var(--control-line);
+  border-radius: 999px;
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  transition: background-color 0.25s, border-color 0.25s;
+}
+
+.lang select {
+  appearance: none;
+  -webkit-appearance: none;
+  height: 24px;
+  padding: 0 23px 0 6px;
+  border: 0;
+  border-radius: 999px;
+  background-color: transparent;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23808080' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 6px center;
+  font-size: 13px;
+  cursor: pointer;
+}
+.lang select option { background: var(--panel); color: var(--text); }
+
+.theme-switch {
+  display: inline-flex;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  border-radius: 999px;
+}
+.theme-switch__track {
+  position: relative;
+  display: block;
+  width: 46px;
+  height: 24px;
+  border-radius: 999px;
+  background: var(--switch-track);
+  transition: background-color 0.25s;
+}
+.theme-switch__icon {
+  position: absolute;
+  top: 5px;
+  color: var(--switch-icon);
+}
+.theme-switch__icon--sun  { left: 5px; }
+.theme-switch__icon--moon { right: 5px; }
+.theme-switch__knob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--switch-knob);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  transition: transform 0.25s var(--ease);
+}
+.theme-switch[aria-checked="true"] .theme-switch__knob { transform: translateX(22px); }
+
+/* ---------- 로고(hero) ---------- */
+/* 같은 길이·이징으로 높이/로고 크기/투명도를 함께 움직여서
+   첫 화면 → 홈 → 전체 목록, 그리고 그 역방향이 모두 같은 애니메이션이 된다. */
+html[data-view="splash"] { --hero-h: 100vh; --logo-size: var(--logo-splash); --logo-opacity: 1; }
+html[data-view="home"]   { --hero-h: calc(var(--logo-home) + var(--edge) * 2); --logo-size: var(--logo-home); --logo-opacity: 1; }
+html[data-view="list"]   { --hero-h: var(--edge); --logo-size: calc(var(--logo-home) * 0.35); --logo-opacity: 0; }
+@supports (height: 100dvh) {
+  html[data-view="splash"] { --hero-h: 100dvh; }
+}
+
+.hero {
+  position: relative;
+  height: var(--hero-h);
+  transition: height var(--dur) var(--ease);
+}
+.hero__logo {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: var(--logo-size);
+  height: var(--logo-size);
+  object-fit: contain;       /* 비율 유지 — 늘어나지 않는다 */
+  opacity: var(--logo-opacity);
+  transform: translate(-50%, -50%);
+  user-select: none;
+  -webkit-user-drag: none;
+  transition: width var(--dur) var(--ease), height var(--dur) var(--ease),
+              opacity var(--dur) var(--ease);
+}
+html[data-view="list"] .hero { pointer-events: none; }
+
+/* ---------- 패널 ---------- */
+.panel {
+  position: relative;
+  width: min(calc(100% - var(--gutter) * 2), 1500px);
+  margin: 0 auto var(--edge);
+  background: var(--panel);
+  border: var(--panel-border) solid var(--accent);
+  border-radius: var(--panel-radius);
+  transition: background-color 0.25s, border-color 0.25s;
+}
+html[data-view="splash"] .panel { visibility: hidden; }
+html[data-view="home"] .panel { min-height: calc(100vh - var(--logo-home) - var(--edge) * 3); }
+html[data-view="list"] .panel { min-height: calc(100vh - var(--edge) * 2); }
+@supports (height: 100dvh) {
+  html[data-view="home"] .panel { min-height: calc(100dvh - var(--logo-home) - var(--edge) * 3); }
+  html[data-view="list"] .panel { min-height: calc(100dvh - var(--edge) * 2); }
+}
+
+.panel__inner {
+  padding: 2.2rem 1.5rem 3rem;
+  transition: opacity 0.18s ease;
+}
+.panel__inner.is-swapping { opacity: 0; }
+
+.noscript { padding: 2rem; text-align: center; }
+
+/* ---------- 홈: 분류별 가로 목록 ---------- */
+.cat + .cat { margin-top: 2.7rem; }
+.cat:first-child { padding-top: 0.9rem; }
+
+.cat__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 2.45rem;
+}
+.cat__title {
+  margin: 0;
+  padding-left: 0.8rem;
+  font-size: 2.9rem;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+.cat__more {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.55rem;
+  padding: 0.2rem 0.8rem;
+  color: var(--muted);
+  font-size: 1.5rem;
+  text-decoration: none;
+  white-space: nowrap;
+  border-radius: 8px;
+  transition: color 0.15s;
+}
+.cat__more:hover { color: var(--text); }
+.cat__more svg { width: 0.62em; height: 0.62em; flex: none; }
+
+.cat__empty {
+  margin: 0;
+  padding: 1.2rem 0.8rem 0.4rem;
+  color: var(--muted);
+  font-size: max(11px, 1.1rem);
+}
+
+/* ---------- 전체 목록 ---------- */
+.list-head {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  margin-bottom: 3.3rem;
+  min-height: 3.6rem;
+}
+.back {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.3rem 0.8rem;
+  color: var(--muted);
+  font-size: 1.5rem;
+  text-decoration: none;
+  white-space: nowrap;
+  border-radius: 8px;
+  transition: color 0.15s;
+}
+.back:hover { color: var(--text); }
+.back svg { width: 0.62em; height: 0.62em; flex: none; }
+.list-title {
+  grid-column: 2;
+  margin: 0;
+  font-size: 2.9rem;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  text-align: center;
+}
+
+/* ---------- 게임 카드 그리드 ---------- */
+/* 카드 한 장의 최소 폭(11.5rem)이 UI 배율을 따라가므로, 배율을 줄이면 한 줄에 들어가는 카드 수가 늘어난다.
+   (홈에서는 JS 가 한 줄에 들어가는 개수만큼만 보여준다 — app.js 의 fitHomeGrid) */
+.grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(11.5rem, 1fr));
+  gap: 2.5rem 2.7rem;
+}
+
+.grid--list { row-gap: 3.5rem; }
+
+.card {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+  border-radius: 6px;
+  transition: transform 0.18s ease;
+}
+.card:hover { transform: translateY(-3px); }
+.card:focus-visible { outline-offset: 6px; }
+.card__title {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  margin-top: 0.7rem;
+  padding-left: 0.8rem;
+  font-size: 1.4rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+.card__creator {
+  display: block;
+  overflow: hidden;
+  padding-left: 0.8rem;
+  color: var(--muted);
+  font-size: max(10px, 0.95rem);
+  line-height: 1.5;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* ---------- 썸네일 ---------- */
+.thumb {
+  position: relative;
+  aspect-ratio: 3 / 2;
+  overflow: hidden;
+  background: var(--thumb-bg);
+}
+.thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+/* 썸네일이 없으면 검은 윤곽 + 회색 바탕 */
+.thumb--empty { border: 1px solid var(--thumb-line); }
+
+/* ---------- 상세 팝업 ---------- */
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.22s ease, visibility 0s linear 0.22s;
+}
+.modal.is-open {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.22s ease;
+}
+.modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: var(--overlay);
+}
+.modal__dialog {
+  position: relative;
+  width: min(100%, 64rem);
+  max-height: calc(100vh - 3rem);
+  max-height: calc(100dvh - 3rem);
+  overflow-y: auto;
+  padding: 3.4rem 3.1rem 3rem;
+  background: var(--panel);
+  border: var(--panel-border) solid var(--accent);
+  border-radius: clamp(14px, 2.5vw, 32px);
+  transform: translateY(14px) scale(0.97);
+  transition: transform 0.22s ease, background-color 0.25s, border-color 0.25s;
+}
+.modal.is-open .modal__dialog { transform: none; }
+.modal__dialog:focus { outline: none; }
+
+.modal__close {
+  position: absolute;
+  top: 1.15rem;
+  right: 2rem;
+  display: grid;
+  place-items: center;
+  width: 3.1rem;
+  height: 3.1rem;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--close);
+  color: #fff;
+  cursor: pointer;
+  z-index: 1;
+  transition: transform 0.15s ease, filter 0.15s;
+}
+.modal__close:hover { transform: scale(1.08); filter: brightness(1.08); }
+.modal__close svg { width: 55%; height: 55%; }
+
+.modal__top {
+  display: grid;
+  grid-template-columns: minmax(0, 7fr) minmax(0, 6.6fr);
+  gap: 4rem;
+  align-items: start;
+}
+.modal__info { min-width: 0; }
+.modal__title {
+  margin: 0;
+  font-size: 3.4rem;
+  font-weight: 500;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+.modal__creator {
+  margin: 0.4rem 0 0;
+  font-size: 1.85rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+.modal__meta {
+  margin: 0.7rem 0 0;
+  color: var(--muted);
+  font-size: max(10px, 0.92rem);
+  line-height: 1.6;
+}
+.modal__meta:empty { display: none; }
+.modal__creator:empty { display: none; }
+.modal__meta + .modal__meta { margin-top: 0.4rem; }
+
+.play-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 1.1rem;
+  min-height: 5.4rem;
+  padding: 0.6rem 1rem;
+  background: var(--btn-bg);
+  border: 1px solid var(--btn-line);
+  border-radius: 1.3rem;
+  color: var(--btn-text);
+  font-size: 2rem;
+  line-height: 1.25;
+  text-align: center;
+  text-decoration: none;
+  transition: background-color 0.15s, transform 0.15s;
+}
+.play-btn:hover { background: var(--btn-bg-hover); transform: translateY(-1px); }
+.play-btn[aria-disabled="true"] {
+  background: var(--btn-disabled-bg);
+  border-color: var(--btn-disabled-line);
+  color: var(--muted);
+  pointer-events: none;
+  cursor: default;
+}
+
+.modal__desc {
+  margin: 2.2rem 0 0;
+  padding: 0 0.8rem;
+  font-size: 1.4rem;
+  line-height: 1.5;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+.modal__desc:empty { display: none; }
+
+/* ---------- 반응형 ----------
+   글자·간격·카드 크기는 모두 rem 이고 열 개수는 auto-fill 이 정하므로,
+   화면이 좁아져도 따로 크기를 바꿀 필요가 없다. 배치가 바뀌어야 하는 곳만 남겼다. */
+@media (max-width: 560px) {
+  .cat + .cat { margin-top: 2rem; }
+  .list-head { grid-template-columns: 1fr; gap: 0.6rem; margin-bottom: 1.8rem; }
+  .list-title { grid-column: 1; }
+  .list-head .back { order: -1; justify-self: start; }
+}
+
+@media (max-width: 520px) {
+  .modal { padding: 0.8rem; }
+  .modal__dialog { padding: 3.6rem 1.4rem 1.8rem; }
+  .modal__close { top: 0.8rem; right: 1rem; width: 2.6rem; height: 2.6rem; }
+  .modal__top { grid-template-columns: 1fr; gap: 1.2rem; }
+  .modal__title { font-size: 2.4rem; }
+  .modal__creator { font-size: 1.4rem; }
+  .play-btn { min-height: 4rem; font-size: 1.5rem; border-radius: 1rem; }
+  .modal__desc { margin-top: 1.4rem; padding: 0; font-size: 1.2rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}
