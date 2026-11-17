@@ -15,9 +15,11 @@ index.html          페이지 뼈대
 css/style.css       스타일 · 색상 · 반응형 · 전환 애니메이션
 js/app.js           화면 전환 · 주소 처리 · 팝업 등 앱 로직
 js/i18n.js          UI 문자열 (한/일/영)
+js/speaki.js        화면 맨 밑을 돌아다니는 스피키 (장식)
 data/games.js       ★ 분류와 게임 목록 — 보통 이 파일만 고치면 됩니다
 assets/logo.webp    로고
 assets/thumbs/      게임 썸네일을 넣을 곳 (직접 만들어 사용)
+assets/apostles/    스피키 이미지(speaki-happy / speaki-cry)와 클릭 음성(mp3, js/speaki.js 의 SRC.sounds 에 등록)
 ```
 
 ## 게임 추가하기
@@ -74,6 +76,7 @@ python -m http.server 5173
 - 첫 화면 유지 시간: `js/app.js` 의 `SPLASH_MS` (기본 1.6초, 클릭·스크롤·키 입력으로 건너뜀)
 - 전환 애니메이션 길이: `css/style.css` 의 `--dur` (기본 0.8초)
 - UI 배율: `css/style.css` 의 `--ui-scale` (기본 0.5). 글자·카드·간격·팝업이 함께 커지고 작아집니다. 로고와 오른쪽 위 컨트롤은 영향을 받지 않습니다. 좁은 화면에서 너무 작아지지 않게 `--ui-min-root`(8px)가 하한을 잡습니다.
+- 스피키: `js/speaki.js` 맨 위 설정값 — 최대 마리 수 `MAX`(10), 들어오는 간격 `SPAWN_MS`, 머무는 시간 `LIFE_MS`, 점프 크기·속도, 클릭했을 때 좌우로 늘어나는 정도 `CLICK_STRETCH`, 젤리 탄성 `STIFFNESS`/`DAMPING`. 크기는 `css/style.css` 의 `--speaki-w`. 「움직임 줄이기」 설정을 쓰는 사람에게는 나타나지 않습니다.
 - 색상(라이트/다크): `css/style.css` 맨 위의 `:root`, `:root[data-theme="dark"]`
 - 글꼴: Google Fonts의 Noto Sans KR / Noto Sans JP (`index.html`의 `<link>`), 실패 시 시스템 글꼴
 

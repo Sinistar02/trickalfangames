@@ -250,6 +250,50 @@ html[data-view="splash"] .panel { visibility: hidden; }
 .site-footer:empty { display: none; }
 html[data-view="splash"] .site-footer { visibility: hidden; }
 
+/* ---------- 스피키 (js/speaki.js 가 움직인다) ---------- */
+/* 화면 맨 밑에 고정된 투명한 층. 스피키 말고는 클릭을 가로채지 않는다.
+   (페이지 맨 끝에서만 보이게 하려면 position 을 absolute 로 바꾸고 body 에 position: relative 를 주면 된다.) */
+.speaki-field {
+  --speaki-w: 7rem;
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 0;
+  z-index: 15;                   /* 컨트롤(20)·팝업(50)보다 아래 */
+  pointer-events: none;
+}
+.speaki {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: var(--speaki-w);
+  pointer-events: auto;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  will-change: transform;
+}
+.speaki__body {
+  position: relative;
+  transform-origin: 50% 100%;    /* 발바닥을 기준으로 눌리고 늘어난다 */
+  will-change: transform;
+}
+.speaki img {
+  display: block;
+  width: 100%;
+  height: auto;
+  pointer-events: none;
+  -webkit-user-drag: none;
+  user-select: none;
+}
+.speaki__cry { position: absolute; left: 0; top: 0; visibility: hidden; }
+.speaki.is-crying .speaki__cry { visibility: visible; }
+.speaki.is-crying .speaki__happy { visibility: hidden; }
+html[data-view="splash"] .speaki-field { visibility: hidden; }
+
 .panel__inner {
   padding: 2.2rem 1.5rem 3rem;
   transition: opacity 0.18s ease;
