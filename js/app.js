@@ -91,6 +91,51 @@
     return (Array.isArray(r) ? r : [r]).map(pick).filter(Boolean);
   }
 
+  /* ---------- 단어장 (단어.xlsx) ----------
+     games.js 의 genres / tags 에는 한국어 단어만 적고, 한국어가 아닌 언어일 때는
+     단어.xlsx 에서 같은 단어를 찾아 해당 언어의 값으로 바꿔 보여 준다.
+     시트 이름 = 항목(genres, tags), 1행 = 언어 이름, 1열 = 한국어 단어.
+     못 찾거나 파일을 못 읽으면 한국어 단어를 그대로 보여 준다. */
+  var WORDS_URL = encodeURI('단어.xlsx');
+  var WORDS_HEADERS = { '한국어': 'ko', '日本語': 'ja', 'English': 'en' };
+  var words = {};   // words[시트][한국어 단어][언어] = 번역
+
+  function parseWords(buffer) {
+    var wb = XLSX.read(buffer, { type: 'array' });
+    wb.SheetNames.forEach(function (name) {
+      var rows = XLSX.utils.sheet_to_json(wb.Sheets[name], { header: 1, defval: '' });
+      if (!rows.length) return;
+      var cols = rows[0].map(function (c) { return WORDS_HEADERS[String(c).trim()] || null; });
+      var sheet = words[name] = {};
+      rows.slice(1).forEach(function (row) {
+        var ko = String(row[0] == null ? '' : row[0]).trim();
+        if (!ko) return;
+        var entry = sheet[ko] = {};
+        cols.forEach(function (lang, i) {
+          var v = row[i] == null ? '' : String(row[i]).trim();
+          if (lang && v) entry[lang] = v;
+        });
+      });
+    });
+  }
+
+  function loadWords(done) {
+    if (!window.XLSX || !window.fetch) return;
+    fetch(WORDS_URL)
+      .then(function (r) { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); })
+      .then(function (buf) { parseWords(buf); done(); })
+      .catch(function (e) { console.warn('[단어.xlsx] 불러오기 실패 — 한국어로 표시합니다:', e); });
+  }
+
+  function word(sheet, ko) {
+    var e = words[sheet] && words[sheet][ko];
+    return (e && e[state.lang]) || ko;
+  }
+
+  function wordList(sheet, v) {
+    return list(v).map(function (w) { return word(sheet, w); });
+  }
+
   function formatReleased(v) {
     if (!v) return '';
     var m = /^(\d{4})(?:-(\d{1,2}))?(?:-(\d{1,2}))?$/.exec(String(v).trim());
@@ -264,8 +309,9 @@
   function renderModal(game) {
     $('modal-title').textContent = String(pick(game.title));
     $('modal-creator').textContent = String(pick(game.creator));
-    $('modal-released').textContent = formatReleased(game.released);
-    $('modal-genres').textContent = list(game.genres).concat(list(game.tags)).join(', ');
+    $('modal-released').textContent = [formatReleased(game.released), wordList('platform', game.platform).join(', ')]
+      .filter(Boolean).join(' | ');
+    $('modal-genres').textContent = wordList('genres', game.genres).concat(wordList('tags', game.tags)).join(', ');
     $('modal-desc').textContent = String(pick(game.description));
     fillThumb($('modal-thumb'), game, true);
 
@@ -459,6 +505,8 @@
 
     applyTheme(state.theme, false);
     applyLang(state.lang, false);            // 목록도 여기서 처음 그려진다
+    // 단어장은 뒤늦게 도착해도 되므로 화면을 막지 않고, 도착하면 열려 있는 팝업만 다시 그린다.
+    loadWords(function () { if (modal.id !== null) renderModal(gameIndex[modal.id]); });
 
     if (route.game) {
       modal.byNav = false;

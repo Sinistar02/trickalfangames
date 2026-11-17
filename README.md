@@ -32,6 +32,7 @@ assets/thumbs/      게임 썸네일을 넣을 곳 (직접 만들어 사용)
   creator: '제작자',
   thumbnail: 'assets/thumbs/my-game.webp',   // 없으면 회색 상자 (권장 비율 3:2)
   released: '2025-03',                 // 2025 / 2025-03 / 2025-03-17
+  platform: 'PC',                      // 문자열/배열/언어별 모두 가능. 제작 시기 옆에 「 | 」로 표시
   genres: ['액션'],
   tags: ['협동'],
   description: '게임 설명\n줄바꿈은 \\n',
