@@ -472,6 +472,7 @@
     themeSwitch.setAttribute('aria-label', t('darkMode'));
     $('modal-close').setAttribute('aria-label', t('close'));
     $('site-title').textContent = t('siteName');
+    $('site-footer').textContent = String(pick(DATA.creator) || '');   // 맨 밑 문구
     var meta = document.querySelector('meta[name="description"]');
     if (meta) meta.setAttribute('content', t('siteDescription'));
 

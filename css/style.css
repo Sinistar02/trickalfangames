@@ -93,6 +93,8 @@ html {
 }
 
 body {
+  display: flex;                 /* 로고 → 패널 → 맨 밑 문구를 세로로 쌓고, 패널이 남는 높이를 채운다 */
+  flex-direction: column;
   margin: 0;
   min-height: 100vh;
   min-height: 100dvh;
@@ -231,13 +233,22 @@ html[data-view="list"] .hero { pointer-events: none; }
   border-radius: var(--panel-radius);
   transition: background-color 0.25s, border-color 0.25s;
 }
+.panel { flex: 1 0 auto; }   /* 내용이 짧아도 화면 아래까지 늘어난다 */
 html[data-view="splash"] .panel { visibility: hidden; }
-html[data-view="home"] .panel { min-height: calc(100vh - var(--logo-home) - var(--edge) * 3); }
-html[data-view="list"] .panel { min-height: calc(100vh - var(--edge) * 2); }
-@supports (height: 100dvh) {
-  html[data-view="home"] .panel { min-height: calc(100dvh - var(--logo-home) - var(--edge) * 3); }
-  html[data-view="list"] .panel { min-height: calc(100dvh - var(--edge) * 2); }
+
+/* ---------- 맨 밑 문구 ---------- */
+.site-footer {
+  flex: none;
+  padding: 0 var(--gutter) 1.6rem;
+  color: var(--text);            /* 라이트: 검은색 / 다크: 어두운 배경에서 읽히도록 밝은색 */
+  font-size: max(10px, 1rem);    /* 작은 글씨 */
+  line-height: 1.6;
+  text-align: center;
+  white-space: pre-line;         /* 데이터의 \n 을 줄바꿈으로 */
+  overflow-wrap: anywhere;
 }
+.site-footer:empty { display: none; }
+html[data-view="splash"] .site-footer { visibility: hidden; }
 
 .panel__inner {
   padding: 2.2rem 1.5rem 3rem;
@@ -412,7 +423,8 @@ html[data-view="list"] .panel { min-height: calc(100vh - var(--edge) * 2); }
 }
 .modal__dialog {
   position: relative;
-  width: min(100%, 64rem);
+  width: min(100%, 70.4rem);
+  min-height: min(39.6rem, calc(100dvh - 3rem));   /* 기존 높이(약 36rem)의 110% */
   max-height: calc(100vh - 3rem);
   max-height: calc(100dvh - 3rem);
   overflow-y: auto;
@@ -508,7 +520,7 @@ html[data-view="list"] .panel { min-height: calc(100vh - var(--edge) * 2); }
 .modal__desc {
   margin: 2.2rem 0 0;
   padding: 0 0.8rem;
-  font-size: 1.4rem;
+  font-size: 1.54rem;
   line-height: 1.5;
   white-space: pre-line;
   overflow-wrap: anywhere;
@@ -527,13 +539,13 @@ html[data-view="list"] .panel { min-height: calc(100vh - var(--edge) * 2); }
 
 @media (max-width: 520px) {
   .modal { padding: 0.8rem; }
-  .modal__dialog { padding: 3.6rem 1.4rem 1.8rem; }
+  .modal__dialog { padding: 3.6rem 1.4rem 1.8rem; min-height: 0; }
   .modal__close { top: 0.8rem; right: 1rem; width: 2.6rem; height: 2.6rem; }
   .modal__top { grid-template-columns: 1fr; gap: 1.2rem; }
   .modal__title { font-size: 2.4rem; }
   .modal__creator { font-size: 1.4rem; }
   .play-btn { min-height: 4rem; font-size: 1.5rem; border-radius: 1rem; }
-  .modal__desc { margin-top: 1.4rem; padding: 0; font-size: 1.2rem; }
+  .modal__desc { margin-top: 1.4rem; padding: 0; font-size: 1.32rem; }
 }
 
 @media (prefers-reduced-motion: reduce) {
