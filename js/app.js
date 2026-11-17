@@ -15,6 +15,7 @@
   var I18N = window.TG_I18N;
 
   var SPLASH_MS = 1600;   // 첫 화면을 보여 주는 시간 (클릭·스크롤·키 입력으로 건너뛸 수 있음)
+  var BGM_WAIT_MS = 2500; // 배경음악의 자동 재생 결과를 기다려 주는 최대 시간
   var SWAP_MS = 180;      // 화면 전환 때 목록 내용이 사라지는 시간
   var HOME_MAX = 24;      // 홈에서 분류마다 최대로 그려 두는 카드 수 (실제 표시는 한 줄 분량)
 
@@ -297,8 +298,32 @@
     var logo = $('logo');
     var ready = logo.decode ? logo.decode().catch(function () {}) : Promise.resolve();
     ready.then(function () {
-      if (splashActive) splashTimer = setTimeout(leaveSplash, SPLASH_MS);
+      if (splashActive) splashTimer = setTimeout(autoLeave, SPLASH_MS);
     });
+  }
+
+  // 시간이 지났을 때: 배경음악이 브라우저에 자동 재생을 막혔다면 첫 조작(클릭·터치·키)을 기다린다.
+  // 그 조작으로 음악이 시작되면서 홈으로 넘어가므로, 항상 소리와 함께 입장하게 된다.
+  // 자동 재생이 허용됐거나 사용자가 음악을 꺼 둔 경우에는 지금처럼 자동으로 넘어간다.
+  function autoLeave() {
+    if (!splashActive) return;
+    var bgm = window.TG_BGM;
+    if (!bgm) { leaveSplash(); return; }
+    Promise.race([
+      bgm.whenSettled(),
+      new Promise(function (resolve) { setTimeout(function () { resolve('timeout'); }, BGM_WAIT_MS); }),
+    ]).then(function (state) {
+      if (!splashActive) return;
+      if (state === 'blocked') waitForInput();
+      else leaveSplash();
+    });
+  }
+
+  function waitForInput() {
+    // 스크롤·터치 이동은 브라우저가 '사용자 조작'으로 인정하지 않아 음악을 못 켜므로 입구에서 뺀다.
+    ['wheel', 'touchmove'].forEach(function (e) { window.removeEventListener(e, leaveSplash); });
+    var hint = $('splash-hint');
+    if (hint) hint.classList.add('is-visible');
   }
 
   /* ---------- 게임 상세 팝업 ---------- */
@@ -472,6 +497,7 @@
     themeSwitch.setAttribute('aria-label', t('darkMode'));
     $('modal-close').setAttribute('aria-label', t('close'));
     $('site-title').textContent = t('siteName');
+    $('splash-hint').textContent = t('clickToStart');
     $('site-footer').textContent = String(pick(DATA.creator) || '');   // 맨 밑 문구
     var meta = document.querySelector('meta[name="description"]');
     if (meta) meta.setAttribute('content', t('siteDescription'));
