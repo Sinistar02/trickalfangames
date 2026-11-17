@@ -324,13 +324,15 @@ html[data-view="list"] .panel { min-height: calc(100vh - var(--edge) * 2); }
 
 /* ---------- 게임 카드 그리드 ---------- */
 /* 카드 한 장의 최소 폭(11.5rem)이 UI 배율을 따라가므로, 배율을 줄이면 한 줄에 들어가는 카드 수가 늘어난다.
+   --card-scale 은 카드(썸네일·제목·제작자)만 따로 키우는 배율이다. (카드 사이 간격은 그대로)
    (홈에서는 JS 가 한 줄에 들어가는 개수만큼만 보여준다 — app.js 의 fitHomeGrid) */
 .grid {
+  --card-scale: 1.25;
   list-style: none;
   margin: 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(11.5rem, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(calc(11.5rem * var(--card-scale)), 1fr));
   gap: 2.5rem 2.7rem;
 }
 
@@ -351,18 +353,18 @@ html[data-view="list"] .panel { min-height: calc(100vh - var(--edge) * 2); }
   -webkit-line-clamp: 2;
   line-clamp: 2;
   overflow: hidden;
-  margin-top: 0.7rem;
-  padding-left: 0.8rem;
-  font-size: 1.4rem;
+  margin-top: calc(0.7rem * var(--card-scale));
+  padding-left: calc(0.8rem * var(--card-scale));
+  font-size: calc(1.4rem * var(--card-scale));
   line-height: 1.35;
   overflow-wrap: anywhere;
 }
 .card__creator {
   display: block;
   overflow: hidden;
-  padding-left: 0.8rem;
+  padding-left: calc(0.8rem * var(--card-scale));
   color: var(--muted);
-  font-size: max(10px, 0.95rem);
+  font-size: max(calc(10px * var(--card-scale)), calc(0.95rem * var(--card-scale)));
   line-height: 1.5;
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -386,6 +388,8 @@ html[data-view="list"] .panel { min-height: calc(100vh - var(--edge) * 2); }
 
 /* ---------- 상세 팝업 ---------- */
 .modal {
+  --modal-dur: 0.32s;           /* 열기·닫기 애니메이션 길이 */
+  --modal-from: 0.2;            /* 처음 크기 (최종 크기 대비) */
   position: fixed;
   inset: 0;
   z-index: 50;
@@ -394,12 +398,12 @@ html[data-view="list"] .panel { min-height: calc(100vh - var(--edge) * 2); }
   padding: 1.5rem;
   opacity: 0;
   visibility: hidden;
-  transition: opacity 0.22s ease, visibility 0s linear 0.22s;
+  transition: opacity var(--modal-dur) ease, visibility 0s linear var(--modal-dur);
 }
 .modal.is-open {
   opacity: 1;
   visibility: visible;
-  transition: opacity 0.22s ease;
+  transition: opacity var(--modal-dur) ease;
 }
 .modal__backdrop {
   position: absolute;
@@ -416,8 +420,11 @@ html[data-view="list"] .panel { min-height: calc(100vh - var(--edge) * 2); }
   background: var(--panel);
   border: var(--panel-border) solid var(--accent);
   border-radius: clamp(14px, 2.5vw, 32px);
-  transform: translateY(14px) scale(0.97);
-  transition: transform 0.22s ease, background-color 0.25s, border-color 0.25s;
+  /* 화면 중앙(팝업 자신의 중심)에서 커지며 나타나고, 닫을 때는 그 반대로 줄어든다 */
+  transform-origin: center center;
+  transform: scale(var(--modal-from));
+  transition: transform var(--modal-dur) cubic-bezier(0.16, 1, 0.3, 1),
+              background-color 0.25s, border-color 0.25s;
 }
 .modal.is-open .modal__dialog { transform: none; }
 .modal__dialog:focus { outline: none; }
