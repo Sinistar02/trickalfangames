@@ -3,10 +3,17 @@
    화면 상태는 <html data-view="splash | home | list"> 로 제어한다.
    ========================================================================== */
 
+/* 배경 그라데이션의 두 색. 색 값으로 등록해 두면 라이트/다크 전환 때 그라데이션도 부드럽게 바뀐다.
+   (이 기능을 지원하지 않는 브라우저에서는 전환만 즉시 바뀌고 모양은 같다.) */
+@property --bg        { syntax: "<color>"; inherits: true; initial-value: #f7feff; }
+@property --bg-bottom { syntax: "<color>"; inherits: true; initial-value: #d1f8ff; }
+
 /* ---------- 디자인 토큰 ---------- */
 :root {
   /* 라이트 모드 (기본) — 색상은 스케치에서 추출 */
-  --bg: #f7feff;
+  --bg: #f7feff;                 /* 배경 위쪽 */
+  --bg-bottom: #d1f8ff;          /* 배경 아래쪽 (시안 그라데이션 끝) */
+  --bg-hold: 62.5%;              /* 위에서 이 지점까지는 단색, 그 아래부터 아래쪽 색으로 */
   --panel: #ffffff;
   --accent: #65f0ff;          /* 패널·팝업 테두리 */
   --text: #000000;
@@ -58,6 +65,7 @@
 
 :root[data-theme="dark"] {
   --bg: #0c1214;
+  --bg-bottom: #0e2c34;
   --panel: #141c1f;
   --accent: #36cfe2;
   --text: #eef5f6;
@@ -90,6 +98,13 @@ html {
   font-size: max(var(--ui-min-root), calc(clamp(13px, calc(0.45vw + 10.2px), 19px) * var(--ui-scale)));
   scrollbar-gutter: stable;
   -webkit-text-size-adjust: 100%;
+  transition: --bg 0.25s, --bg-bottom 0.25s;   /* 테마를 바꿀 때 배경색이 부드럽게 바뀐다 */
+
+  /* 뒷배경 그라데이션: 위쪽은 단색으로 두었다가 아래로 갈수록 시안색이 짙어진다.
+     화면(뷰포트)에 고정되어 스크롤해도 늘 같은 모양으로 보이고, 스크롤바 자리까지 이어진다. */
+  background-color: var(--bg);   /* 그라데이션을 못 그리는 경우의 바탕색 */
+  background-image: linear-gradient(to bottom, var(--bg) 0%, var(--bg) var(--bg-hold), var(--bg-bottom) 100%);
+  background-attachment: fixed;
 }
 
 body {
@@ -98,11 +113,11 @@ body {
   margin: 0;
   min-height: 100vh;
   min-height: 100dvh;
-  background: var(--bg);
+  /* 배경은 html 에 있다 (위 그라데이션). body 에 색을 주면 그라데이션을 가리므로 주지 않는다. */
   color: var(--text);
   font-family: var(--font);
   line-height: 1.5;
-  transition: background-color 0.25s, color 0.25s;
+  transition: color 0.25s;
 }
 
 /* 첫 화면에서는 스크롤을 잠근다 */
