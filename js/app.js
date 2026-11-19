@@ -143,6 +143,7 @@
     if (!v) return '';
     var m = /^(\d{4})(?:-(\d{1,2}))?(?:-(\d{1,2}))?$/.exec(String(v).trim());
     if (!m) return String(v);
+    if (+m[1] === 0) return '';   // "0000-01-00" 은 제작 시기를 알 수 없다는 뜻이라 표시하지 않는다
     try {
       var opts = { year: 'numeric', timeZone: 'UTC' };
       if (m[2]) opts.month = 'long';
