@@ -257,17 +257,220 @@
     return wrap;
   }
 
+  /* ---------- 전체 목록의 검색 · 필터 ----------
+     - 검색: 게임 이름만 본다. 현재 언어와 상관없이 title 에 적힌 모든 언어의 이름과 비교한다.
+     - 필터: 출시 년도 / 제작자 / 장르 / 태그. 같은 그룹 안에서는 하나라도 맞으면(OR),
+       그룹끼리는 모두 맞아야(AND) 보인다. 출시 년도는 날짜가 없는 게임을 항상 제외한다.
+     - 값은 한국어 기준으로 비교하고(장르·태그는 games.js 에 한국어로 적혀 있다), 버튼에는 현재 언어로 보여 준다. */
+  var SEARCH_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>';
+  var CHEVRON_ICON = '<svg viewBox="0 0 12 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m1.5 1.5 4.5 4.5 4.5-4.5"/></svg>';
+
+  var FILTER_GROUPS = [
+    { key: 'year',    label: 'filterYear' },
+    { key: 'creator', label: 'filterCreator' },
+    { key: 'genre',   label: 'filterGenre', sheet: 'genres' },
+    { key: 'tag',     label: 'filterTag',   sheet: 'tags' },
+  ];
+
+  var listFilter = null;   // { cat, q, open, sel: { year:{}, creator:{}, genre:{}, tag:{} } } — 분류를 바꾸면 초기화
+  var listUI = null;       // 지금 그려져 있는 필터 버튼 영역 (단어장이 늦게 도착했을 때 다시 그리기 위해)
+
+  function freshFilter(catId) {
+    return { cat: catId, q: '', open: false, sel: { year: {}, creator: {}, genre: {}, tag: {} } };
+  }
+
+  // 언어와 상관없는 기준값(기본 언어)
+  function baseValue(v) {
+    if (v == null) return '';
+    if (typeof v !== 'object' || Array.isArray(v)) return v;
+    if (v[I18N.defaultLang] != null) return v[I18N.defaultLang];
+    var keys = Object.keys(v);
+    return keys.length ? v[keys[0]] : '';
+  }
+
+  function baseList(v) {
+    var r = baseValue(v);
+    if (r === '' || r == null) return [];
+    return (Array.isArray(r) ? r : [r]).map(function (x) { return String(baseValue(x)).trim(); }).filter(Boolean);
+  }
+
+  function gameYear(g) {
+    var m = /^(\d{4})/.exec(String(g.released == null ? '' : g.released).trim());
+    var y = m ? +m[1] : 0;
+    return y > 0 ? y : null;   // 날짜가 없거나 "0000-.." 이면 모름
+  }
+
+  function creatorKey(g) { return String(baseValue(g.creator)).trim(); }
+
+  function titleValues(g) {
+    var tt = g.title;
+    if (tt == null) return [];
+    if (typeof tt !== 'object') return [String(tt)];
+    return Object.keys(tt).map(function (k) { return String(tt[k]); });
+  }
+
+  // 검색 비교용: 전각/반각 통일, 대소문자·공백 무시
+  function norm(s) { return String(s).normalize('NFKC').toLowerCase().replace(/\s+/g, ''); }
+
+  function anySelected(map) { return Object.keys(map).length > 0; }
+
+  function matchesFilter(g) {
+    var f = listFilter;
+    var q = norm(f.q);
+    if (q && !titleValues(g).some(function (name) { return norm(name).indexOf(q) >= 0; })) return false;
+
+    if (anySelected(f.sel.year)) {
+      var y = gameYear(g);
+      if (y == null || !f.sel.year[y]) return false;   // 날짜가 없으면 무조건 제외
+    }
+    if (anySelected(f.sel.creator) && !f.sel.creator[creatorKey(g)]) return false;
+    if (anySelected(f.sel.genre) && !baseList(g.genres).some(function (w) { return f.sel.genre[w]; })) return false;
+    if (anySelected(f.sel.tag) && !baseList(g.tags).some(function (w) { return f.sel.tag[w]; })) return false;
+    return true;
+  }
+
+  // 현재 분류의 게임들에서 그룹별로 고를 수 있는 값 목록을 뽑는다.
+  function facetOptions(group, items) {
+    var seen = {};
+    items.forEach(function (g) {
+      var vals;
+      if (group.key === 'year') { var y = gameYear(g); vals = y == null ? [] : [String(y)]; }
+      else if (group.key === 'creator') { var c = creatorKey(g); vals = c ? [c] : []; }
+      else vals = baseList(group.key === 'genre' ? g.genres : g.tags);
+      vals.forEach(function (v) {
+        if (!seen[v]) seen[v] = { value: v, count: 0, label: group.key === 'creator' ? String(pick(g.creator)) : v };
+        seen[v].count++;
+      });
+    });
+    var opts = Object.keys(seen).map(function (k) {
+      var o = seen[k];
+      if (group.sheet) o.label = word(group.sheet, o.value);
+      return o;
+    });
+    if (group.key === 'year') opts.sort(function (a, b) { return b.value - a.value; });
+    else if (group.key === 'creator') opts.sort(function (a, b) { return a.label.localeCompare(b.label, state.lang); });
+    else opts.sort(function (a, b) { return b.count - a.count || a.label.localeCompare(b.label, state.lang); });
+    return opts;
+  }
+
+  function resultsNode(catId) {
+    var all = gamesOf(catId);
+    if (!all.length) return emptyNote();
+    var shown = all.filter(matchesFilter);
+    return shown.length
+      ? h('ul', { class: 'grid grid--list' }, shown.map(function (g) { return card(g, catId); }))
+      : h('p', { class: 'cat__empty', text: t('noResults') });
+  }
+
+  function updateResults() {
+    var body = panelContent.querySelector('.list-body');
+    if (!body || !listFilter) return;
+    body.replaceChildren(resultsNode(listFilter.cat));
+    var n = 0;
+    Object.keys(listFilter.sel).forEach(function (k) { n += Object.keys(listFilter.sel[k]).length; });
+    var badge = panelContent.querySelector('.filter-toggle__count');
+    if (badge) badge.textContent = n ? String(n) : '';
+  }
+
+  function buildChips(groupsEl, items) {
+    var f = listFilter;
+    groupsEl.replaceChildren();
+    FILTER_GROUPS.forEach(function (group) {
+      var opts = facetOptions(group, items);
+      if (!opts.length) return;
+      var chips = h('div', { class: 'filters__chips' }, opts.map(function (o) {
+        var chip = h('button', {
+          type: 'button',
+          class: 'chip',
+          'aria-pressed': f.sel[group.key][o.value] ? 'true' : 'false',
+          text: o.label,
+        });
+        chip.addEventListener('click', function () {
+          var map = f.sel[group.key];
+          if (map[o.value]) delete map[o.value]; else map[o.value] = true;
+          chip.setAttribute('aria-pressed', map[o.value] ? 'true' : 'false');
+          updateResults();
+        });
+        return chip;
+      }));
+      groupsEl.append(h('section', { class: 'filters__group' }, [
+        h('h3', { class: 'filters__label', text: t(group.label) }),
+        chips,
+      ]));
+    });
+  }
+
   function renderList(catId) {
     var cat = catIndex[catId];
     var items = gamesOf(catId);
-    var head = h('div', { class: 'list-head' }, [
+    if (!listFilter || listFilter.cat !== catId) listFilter = freshFilter(catId);
+    var f = listFilter;
+
+    var headKids = [
       h('a', { class: 'back', href: '#/' }, [icon(LEFT_ICON), t('backToStart')]),
       h('h2', { class: 'list-title', text: String(pick(cat.name)) }),
-    ]);
-    var body = items.length
-      ? h('ul', { class: 'grid grid--list' }, items.map(function (g) { return card(g, catId); }))
-      : emptyNote();
-    return h('div', { class: 'view view--list' }, [head, body]);
+    ];
+    var kids = [];
+    listUI = null;
+
+    if (items.length) {
+      // 검색창: 항상 펼쳐져 있고, 글자를 입력하는 즉시 목록이 걸러진다.
+      var input = h('input', {
+        type: 'search',
+        class: 'search__input',
+        placeholder: t('searchPlaceholder'),
+        'aria-label': t('searchLabel'),
+        autocomplete: 'off',
+        spellcheck: 'false',
+        enterkeyhint: 'search',
+      });
+      input.value = f.q;
+      input.addEventListener('input', function () { f.q = input.value; updateResults(); });
+
+      var toggle = h('button', {
+        type: 'button',
+        class: 'filter-toggle',
+        'aria-expanded': f.open ? 'true' : 'false',
+        'aria-controls': 'filters',
+      }, [t('filterToggle'), h('span', { class: 'filter-toggle__count' }), icon(CHEVRON_ICON)]);
+
+      var groupsEl = h('div', { class: 'filters__groups' });
+      var reset = h('button', { type: 'button', class: 'filters__reset', text: t('filterReset') });
+      var panel = h('div', { class: f.open ? 'filters is-open' : 'filters', id: 'filters' }, [
+        h('div', { class: 'filters__clip' }, [h('div', { class: 'filters__inner' }, [groupsEl, reset])]),
+      ]);
+      if (!f.open) panel.setAttribute('inert', '');
+
+      toggle.addEventListener('click', function () {
+        f.open = !f.open;
+        toggle.setAttribute('aria-expanded', f.open ? 'true' : 'false');
+        panel.classList.toggle('is-open', f.open);
+        if (f.open) panel.removeAttribute('inert'); else panel.setAttribute('inert', '');
+      });
+      reset.addEventListener('click', function () {
+        f.sel = { year: {}, creator: {}, genre: {}, tag: {} };
+        Array.prototype.forEach.call(groupsEl.querySelectorAll('.chip'), function (c) { c.setAttribute('aria-pressed', 'false'); });
+        updateResults();
+      });
+
+      buildChips(groupsEl, items);
+      listUI = { groupsEl: groupsEl, items: items };
+
+      headKids.push(h('div', { class: 'list-tools' }, [
+        h('label', { class: 'search' }, [icon(SEARCH_ICON), input]),
+        toggle,
+      ]));
+      kids.push(panel);
+    }
+
+    var body = h('div', { class: 'list-body', 'aria-live': 'polite' }, [resultsNode(catId)]);
+    var view = h('div', { class: 'view view--list' }, [h('div', { class: 'list-head' }, headKids)].concat(kids, [body]));
+    return view;
+  }
+
+  // 단어장이 뒤늦게 도착하면 장르·태그 버튼 이름만 다시 그린다 (입력 중인 검색어·포커스는 그대로)
+  function refreshFilterLabels() {
+    if (listUI && document.contains(listUI.groupsEl)) buildChips(listUI.groupsEl, listUI.items);
   }
 
   var panelContent = $('panel-content');
@@ -573,7 +776,10 @@
     applyTheme(state.theme, false);
     applyLang(state.lang, false);            // 목록도 여기서 처음 그려진다
     // 단어장은 뒤늦게 도착해도 되므로 화면을 막지 않고, 도착하면 열려 있는 팝업만 다시 그린다.
-    loadWords(function () { if (modal.id !== null) renderModal(gameIndex[modal.id]); });
+    loadWords(function () {
+      if (modal.id !== null) renderModal(gameIndex[modal.id]);
+      refreshFilterLabels();
+    });
 
     if (route.game) {
       modal.byNav = false;

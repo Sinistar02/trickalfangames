@@ -439,6 +439,131 @@ html[data-view="splash"] .speaki-field { visibility: hidden; }
   text-align: center;
 }
 
+/* ---------- 전체 목록: 검색 · 필터 ---------- */
+.list-head { margin-bottom: 1.6rem; }
+.list-tools {
+  grid-column: 3;
+  justify-self: end;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 0;
+  max-width: 100%;
+}
+.search {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 22rem;
+  max-width: 100%;
+  padding: 0 1rem;
+  height: 3.2rem;
+  min-height: 28px;
+  color: var(--muted);
+  background: var(--panel);
+  border: 1px solid var(--control-line);
+  border-radius: 999px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.search:focus-within { border-color: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 35%, transparent); }
+.search svg { width: 1.5rem; min-width: 12px; height: 1.5rem; min-height: 12px; flex: none; }
+.search__input {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-size: max(12px, 1.4rem);
+}
+.search__input::placeholder { color: var(--muted); }
+.search__input::-webkit-search-cancel-button { cursor: pointer; }
+
+.filter-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  height: 3.2rem;
+  min-height: 28px;
+  padding: 0 1.1rem;
+  color: var(--text);
+  background: var(--panel);
+  border: 1px solid var(--control-line);
+  border-radius: 999px;
+  font-size: max(12px, 1.4rem);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: border-color 0.15s, background-color 0.15s;
+}
+.filter-toggle:hover { border-color: var(--accent); }
+.filter-toggle svg { width: 1rem; min-width: 9px; flex: none; transition: transform 0.2s ease; }
+.filter-toggle[aria-expanded="true"] svg { transform: rotate(180deg); }
+.filter-toggle__count {
+  min-width: 1.8em;
+  padding: 0 0.4em;
+  color: #000;
+  background: var(--accent);
+  border-radius: 999px;
+  font-size: 0.85em;
+  line-height: 1.7;
+  text-align: center;
+}
+.filter-toggle__count:empty { display: none; }
+
+/* 접고 펼치는 필터 영역: 높이가 0fr ↔ 1fr 로 부드럽게 바뀐다 */
+.filters {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.25s ease;
+}
+.filters.is-open { grid-template-rows: 1fr; }
+.filters__clip { min-height: 0; overflow: hidden; }
+.filters__inner {
+  margin: 0 0.4rem 1.2rem;
+  padding: 1.2rem 1.4rem 1.1rem;
+  max-height: min(42vh, 40rem);
+  overflow-y: auto;
+  background: color-mix(in srgb, var(--accent) 7%, var(--panel));
+  border: 1px solid var(--control-line);
+  border-radius: 1.4rem;
+}
+.filters__group + .filters__group { margin-top: 1.1rem; }
+.filters__label {
+  margin: 0 0 0.5rem;
+  color: var(--muted);
+  font-size: max(11px, 1.15rem);
+  font-weight: 700;
+}
+.filters__chips { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.chip {
+  padding: 0.3rem 1rem;
+  color: var(--text);
+  background: var(--panel);
+  border: 1px solid var(--control-line);
+  border-radius: 999px;
+  font-size: max(11px, 1.2rem);
+  line-height: 1.5;
+  cursor: pointer;
+  transition: background-color 0.12s, border-color 0.12s;
+}
+.chip:hover { border-color: var(--accent); }
+.chip[aria-pressed="true"] { color: #000; background: var(--accent); border-color: var(--accent); }
+.filters__reset {
+  display: block;
+  margin: 1.1rem 0 0 auto;
+  padding: 0.2rem 0.4rem;
+  color: var(--muted);
+  background: none;
+  border: 0;
+  font-size: max(11px, 1.15rem);
+  text-decoration: underline;
+  cursor: pointer;
+}
+.filters__reset:hover { color: var(--text); }
+.list-body { margin-top: 1.7rem; }
+
 /* ---------- 게임 카드 그리드 ---------- */
 /* 카드 한 장의 최소 폭(11.5rem)이 UI 배율을 따라가므로, 배율을 줄이면 한 줄에 들어가는 카드 수가 늘어난다.
    --card-scale 은 카드(썸네일·제목·제작자)만 따로 키우는 배율이다. (카드 사이 간격은 그대로)
@@ -678,11 +803,19 @@ html[data-view="splash"] .speaki-field { visibility: hidden; }
 /* ---------- 반응형 ----------
    글자·간격·카드 크기는 모두 rem 이고 열 개수는 auto-fill 이 정하므로,
    화면이 좁아져도 따로 크기를 바꿀 필요가 없다. 배치가 바뀌어야 하는 곳만 남겼다. */
+/* 폭이 좁으면 검색창·필터 버튼이 제목 옆에 들어가지 못하므로 아래 줄로 내린다 */
+@media (max-width: 860px) {
+  .list-head { row-gap: 0.8rem; }
+  .list-tools { grid-column: 1 / -1; grid-row: 2; justify-self: stretch; }
+  .search { flex: 1; width: auto; }
+}
+
 @media (max-width: 560px) {
   .cat + .cat { margin-top: 2rem; }
-  .list-head { grid-template-columns: 1fr; gap: 0.6rem; margin-bottom: 1.8rem; }
+  .list-head { grid-template-columns: 1fr; gap: 0.6rem; margin-bottom: 1.4rem; }
   .list-title { grid-column: 1; }
   .list-head .back { order: -1; justify-self: start; }
+  .list-tools { grid-column: 1; grid-row: auto; order: 2; }
 }
 
 @media (max-width: 520px) {
