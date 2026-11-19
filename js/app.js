@@ -21,6 +21,8 @@
 
   var RIGHT_ICON = '<svg viewBox="0 0 10 12" aria-hidden="true"><path d="M1 .5 9.5 6 1 11.5z" fill="currentColor"/></svg>';
   var LEFT_ICON  = '<svg viewBox="0 0 10 12" aria-hidden="true"><path d="M9 .5 .5 6 9 11.5z" fill="currentColor"/></svg>';
+  // 스포일러로 가린 썸네일 한가운데에 놓는 눈 감은(eye-off) 아이콘 (Feather icons, MIT)
+  var EYE_OFF_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
 
   var reduceMotion = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
 
@@ -187,13 +189,49 @@
     return (catId ? '#/c/' + encodeURIComponent(catId) : '#') + '/g/' + encodeURIComponent(game.id);
   }
 
+  /* ---------- 스포일러 ----------
+     game.spoiler 가 true 이고 한국어가 아닌 언어(일본어·영어)일 때, 카드의 썸네일을 가리고
+     제목 글자를 "ネタバレ注意" / "Spoiler Alert!" 문구(i18n 의 spoilerLabel)로 바꾸고, 제작자 칸은 비워 둔다(투명).
+     카드를 눌러 상세 팝업이 열리면(openModal) 그 게임은 이 방문 동안 공개된 것으로 기억한다. */
+  var revealed = {};
+
+  function isSpoiler(game) {
+    return game.spoiler === true && state.lang !== I18N.defaultLang && !revealed[game.id];
+  }
+
+  function spoilerThumb(box) {
+    box.className = 'thumb thumb--spoiler';
+    box.replaceChildren(icon(EYE_OFF_ICON));
+    return box;
+  }
+
   function card(game, catId) {
-    var a = h('a', { class: 'card', href: gameHref(game, catId), 'data-game': game.id }, [
-      fillThumb(h('div', { class: 'thumb' }), game, false),
-      h('span', { class: 'card__title', text: String(pick(game.title)) }),
-      h('span', { class: 'card__creator', text: String(pick(game.creator)) }),
+    var hidden = isSpoiler(game);
+    var props = { class: hidden ? 'card card--spoiler' : 'card', href: gameHref(game, catId), 'data-game': game.id };
+    if (hidden) props['data-tip'] = t('spoilerTip');
+    var a = h('a', props, [
+      hidden ? spoilerThumb(h('div')) : fillThumb(h('div', { class: 'thumb' }), game, false),
+      h('span', { class: 'card__title', text: hidden ? t('spoilerLabel') : String(pick(game.title)) }),
+      // 제작자 칸은 비워 두되(투명), 높이는 그대로 유지되도록 줄바꿈 없는 공백 한 칸을 넣는다
+      h('span', { class: 'card__creator', text: hidden ? ' ' : String(pick(game.creator)) }),
     ]);
     return h('li', null, [a]);
+  }
+
+  // 이미 그려진 카드를 그대로 두고 가림만 벗긴다 (카드 위치·포커스가 바뀌지 않도록)
+  function revealGame(game) {
+    if (revealed[game.id]) return;
+    revealed[game.id] = true;
+    var cards = panelContent.querySelectorAll('.card--spoiler[data-game="' + (window.CSS && CSS.escape ? CSS.escape(game.id) : game.id) + '"]');
+    Array.prototype.forEach.call(cards, function (a) {
+      a.classList.remove('card--spoiler');
+      a.removeAttribute('data-tip');
+      var box = a.querySelector('.thumb');
+      box.className = 'thumb';
+      fillThumb(box, game, false);
+      a.querySelector('.card__title').textContent = String(pick(game.title));
+      a.querySelector('.card__creator').textContent = String(pick(game.creator));
+    });
   }
 
   function emptyNote() {
@@ -359,6 +397,7 @@
     var wasOpen = modal.id !== null;
     modal.id = game.id;
     renderModal(game);
+    revealGame(game);
     if (wasOpen) return;
     modal.lastFocus = document.activeElement;
     dialogEl.scrollTop = 0;

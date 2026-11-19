@@ -503,6 +503,48 @@ html[data-view="splash"] .speaki-field { visibility: hidden; }
 /* 썸네일이 없으면 검은 윤곽 + 회색 바탕 */
 .thumb--empty { border: 1px solid var(--thumb-line); }
 
+/* ---------- 스포일러로 가린 카드 (app.js 의 isSpoiler) ----------
+   썸네일은 회색 + 한가운데 검은 eye-off 아이콘으로 가리고, 제목은 "Spoiler Alert!" 문구로 바꾸며
+   제작자 칸은 비워 둔다(app.js 의 card). 마우스를 올리면 data-tip 안내 문구가 뜬다. */
+.card--spoiler { position: relative; }
+.thumb--spoiler {
+  display: grid;
+  place-items: center;
+  background: #d1d1d1;
+  color: #000;
+  border: 1px solid var(--thumb-line);
+}
+.thumb--spoiler svg { width: 32%; height: auto; aspect-ratio: 1; }
+.card--spoiler::after {
+  content: attr(data-tip);
+  position: absolute;
+  left: 50%;
+  bottom: 100%;
+  z-index: 5;
+  width: max-content;
+  max-width: calc(100% + 4rem);
+  margin-bottom: 0.8rem;
+  padding: 0.6rem 0.9rem;
+  border-radius: 6px;
+  background: #000;
+  color: #fff;
+  font-size: max(11px, 1.2rem);
+  line-height: 1.45;
+  text-align: center;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transform: translate(-50%, 4px);
+  transition: opacity 0.15s ease, transform 0.15s ease, visibility 0s linear 0.15s;
+}
+.card--spoiler:hover::after,
+.card--spoiler:focus-visible::after {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(-50%, 0);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
 /* ---------- 상세 팝업 ---------- */
 .modal {
   --modal-dur: 0.32s;           /* 열기·닫기 애니메이션 길이 */

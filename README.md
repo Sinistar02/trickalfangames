@@ -36,6 +36,7 @@ assets/apostles/    스피키 이미지(speaki-happy / speaki-cry)와 클릭 음
   title: { ko: '제목', ja: 'タイトル', en: 'Title' },   // 문자열 하나만 써도 됨
   creator: '제작자',
   thumbnail: 'assets/thumbs/my-game.webp',   // 없으면 회색 상자 (권장 비율 3:2)
+  spoiler: false,                      // true: 일본어·영어일 때 카드의 썸네일을 가리고 제목을 "Spoiler Alert!" 문구로 대체, 제작자 칸은 비움 (클릭하면 공개)
   released: '2025-03',                 // 2025 / 2025-03 / 2025-03-17
   platform: 'PC',                      // 문자열/배열/언어별 모두 가능. 제작 시기 옆에 「 | 」로 표시
   genres: ['액션'],
