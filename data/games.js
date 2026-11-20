@@ -479,7 +479,7 @@ window.TG_DATA = {
         ja: "ｽﾋﾟｷ・ザ・チェス",
         en: "Speaki the Chess",
       },
-      creator: "가비아",
+      creator: "Soycake",
       thumbnail: "assets/thumbs/bolchess.webp",
       spoiler: true,
       released: "2026-09-24",
